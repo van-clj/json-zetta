@@ -100,7 +100,7 @@
              (= ch \f) [ result (*> (string "alse") (always false)) ]
              (= ch \t) [ result (*> (string "rue") (always true)) ]
              (= ch \n) [ result (*> (string "ull") (always nil))  ]
-             :else [ result (fail-parser "the imposible happened!") ]]
+             :else [ result (fail-parser "the impossible happened!") ]]
          ]
          result)]
     (<|> most number)))
