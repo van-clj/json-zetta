@@ -1,7 +1,7 @@
 (ns zetta.json
   ^{
     :author "Roman Gonzalez"
-    :doc "A JSON parser combinator."
+    :doc "A JSON parser combinator on zetta-parser."
   }
 
   (:refer-clojure :exclude [get char])
@@ -10,32 +10,42 @@
   (:use [zetta.core
          :only (always fail-parser do-parser with-parser <$> <* *> <|>)]
         [zetta.parser.seq
-         :only (satisfy? char whitespace string number
-                get put want-input?)]
+         :only (satisfy? char string number
+                get put want-input?
+                skip-whitespaces)]
         [zetta.combinators
          :only (sep-by skip-many)]))
 
 (defrecord ContinueScan [buffer])
 (defrecord ScanFinished [item-count remainder])
 
-(defn- continue-scan? [scanner]
+(defn- continue-scan?
+  "Test when the scanning process will continue due to missing input."
+  [scanner]
   (instance? ContinueScan scanner))
 
-(defn- scan-finished? [scanner]
+(defn- scan-finished?
+  "Test when the scanning process has finished, either because the
+   continuation function returned nil or a result."
+  [scanner]
   (instance? ScanFinished scanner))
 
-(defn scan [state0 p]
+(defn scan
+  "Read from the parser input until next-scan-step returns nil.
+   next-scan-step receives the state0 or the state returned
+   on the previous call, with the current item being parsed."
+  [state0 next-scan-step]
   (letfn [
     (scanner [state0 item-count items0]
       (let [item  (first items0)
             items (rest items0)]
       (if (nil? item)
         ; ^ when there is no elements in the buffer, we need
-        ; to ask for more (this is done in the go function)
+        ; to ask for more (this is done in process-scanner)
         (ContinueScan. state0)
-        (let [state1 (p state0 item)]
+        (let [state1 (next-scan-step state0 item)]
           (if (nil? state1)
-              ; ^ when p returns nil, we stop the scan
+              ; ^ on nil, we stop the scan
             (ScanFinished. item-count items)
             (recur state1 (+ 1 item-count) items))))))
 
@@ -73,11 +83,13 @@
        :else [ result (always (concat scans)) ]]]
     result)))
 
-(def skip-spaces (skip-many whitespace))
-
 (declare js-object_ js-array_ js-string_)
 
 (def js-value
+  "Parse a javascript value, this could either be an object, an array,
+   a string, a boolean, a number or a null value. You should use json parser
+   in favor of this function when parsing, as this one relaxes the
+   object-or-array requirement of RFC 4627."
   (let [
     most (do-parser [
            ch (char #{\{ \[ \" \f \t \n})
@@ -108,15 +120,16 @@
     (<$> str/join (scan false scan-step)))))
 
 (def js-string
+  "Parse a JSON string."
   (with-parser
     (*> (char \") js-string_)))
 
 
 (defn- js-array-values [val-parser]
   (with-parser
-    (*> skip-spaces
-        (<* (sep-by (<* val-parser skip-spaces)
-                    (*> (char \,) skip-spaces))
+    (*> skip-whitespaces
+        (<* (sep-by (<* val-parser skip-whitespaces)
+                    (*> (char \,) skip-whitespaces))
             (char \])))))
 
 (def ^:private js-array_
@@ -124,21 +137,22 @@
     (js-array-values js-value)))
 
 (def js-array
+  "Parse a JSON array."
   (with-parser
     (*> (char \[) js-array_)))
 
 (defn- js-object-values [key-parser val-parser]
   (let [parse-pair (with-parser
-                     (<$> vector (<* key-parser skip-spaces)
+                     (<$> vector (<* key-parser skip-whitespaces)
                                  (*> (char \:)
-                                     skip-spaces
+                                     skip-whitespaces
                                      val-parser)))]
     (with-parser
       (<$> (comp #(into {} %)
                  #(map (fn [[k v]] [(keyword k) v]) %))
-                 (*> skip-spaces
-                     (<* (sep-by (<* parse-pair skip-spaces)
-                                 (*> (char \,) skip-spaces))
+                 (*> skip-whitespaces
+                     (<* (sep-by (<* parse-pair skip-whitespaces)
+                                 (*> (char \,) skip-whitespaces))
                          (char \})))))))
 
 (def ^:private js-object_
@@ -146,12 +160,15 @@
     (js-object-values js-string js-value)))
 
 (def js-object
+  "Parse a JSON object."
   (with-parser
     (*> (char \{) js-object_)))
 
 (def json
+  "Parse a top-level JSON value.  This must be either an object or
+   an array, per RFC 4627."
   (do-parser [
-    ch (*> skip-spaces (char #{\{ \[}))
+    ch (*> skip-whitespaces (char #{\{ \[}))
     :if (= ch \{)
     :then [ result js-object_ ]
     :else [ result js-array_  ]]
