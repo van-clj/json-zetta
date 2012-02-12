@@ -8,7 +8,7 @@
   (:require [clojure.string :as str])
 
   (:use [zetta.core
-         :only (always fail-parser do-parser with-parser <$> <* *> <|>)]
+         :only (always fail-parser do-parser <$> <* *> <|>)]
         [zetta.parser.seq
          :only (satisfy? char string number
                 get put want-input?
@@ -103,8 +103,7 @@
              :else [ result (fail-parser "the imposible happened!") ]]
          ]
          result)]
-    (with-parser
-      (<|> most number))))
+    (<|> most number)))
 
 
 (def ^:private js-string_
@@ -116,53 +115,44 @@
           nil
           (= current-char \\))))
   ]
-  (with-parser
-    (<$> str/join (scan false scan-step)))))
+  (<$> str/join (scan false scan-step))))
 
 (def js-string
   "Parse a JSON string."
-  (with-parser
-    (*> (char \") js-string_)))
+  (*> (char \") js-string_))
 
 
 (defn- js-array-values [val-parser]
-  (with-parser
-    (*> skip-whitespaces
-        (<* (sep-by (<* val-parser skip-whitespaces)
-                    (*> (char \,) skip-whitespaces))
-            (char \])))))
+  (*> skip-whitespaces
+      (<* (sep-by (<* val-parser skip-whitespaces)
+                  (*> (char \,) skip-whitespaces))
+          (char \]))))
 
 (def ^:private js-array_
-  (with-parser
-    (js-array-values js-value)))
+  (js-array-values js-value))
 
 (def js-array
   "Parse a JSON array."
-  (with-parser
-    (*> (char \[) js-array_)))
+  (*> (char \[) js-array_))
 
 (defn- js-object-values [key-parser val-parser]
-  (let [parse-pair (with-parser
-                     (<$> vector (<* key-parser skip-whitespaces)
-                                 (*> (char \:)
-                                     skip-whitespaces
-                                     val-parser)))]
-    (with-parser
-      (<$> (comp #(into {} %)
-                 #(map (fn [[k v]] [(keyword k) v]) %))
-                 (*> skip-whitespaces
-                     (<* (sep-by (<* parse-pair skip-whitespaces)
-                                 (*> (char \,) skip-whitespaces))
-                         (char \})))))))
+  (let [parse-pair (<$> vector (<* key-parser skip-whitespaces)
+                               (*> (char \:)
+                                   skip-whitespaces
+                                   val-parser))]
+    (<$> (comp #(into {} %)
+               #(map (fn [[k v]] [(keyword k) v]) %))
+               (*> skip-whitespaces
+                   (<* (sep-by (<* parse-pair skip-whitespaces)
+                               (*> (char \,) skip-whitespaces))
+                       (char \}))))))
 
 (def ^:private js-object_
-  (with-parser
-    (js-object-values js-string js-value)))
+  (js-object-values js-string js-value))
 
 (def js-object
   "Parse a JSON object."
-  (with-parser
-    (*> (char \{) js-object_)))
+  (*> (char \{) js-object_))
 
 (def json
   "Parse a top-level JSON value.  This must be either an object or
