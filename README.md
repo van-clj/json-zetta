@@ -1,4 +1,4 @@
-# json-zetta
+# json-zetta [![Build Status](https://secure.travis-ci.org/van-clj/json-zetta.png)](http://travis-ci.org/van-clj/json-zetta)
 
 Provides a JSON parser implemented using the zetta-parser library.
 
