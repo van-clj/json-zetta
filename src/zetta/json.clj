@@ -57,7 +57,7 @@
 
            (continue-scan? scan-result) [
              _ (put [])
-             more (want-input?)
+             more want-input?
 
              :if more
              :then [
@@ -71,8 +71,7 @@
            (scan-finished? scan-result) [
              _ (put (:remainder scan-result))
              result (always
-                      (concat (take (:item-count scan-result) input)
-                                    scan-acc))]]]
+                      (concat scan-acc (take (:item-count scan-result) input)))]]]
 
         result))
   ]
