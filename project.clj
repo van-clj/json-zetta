@@ -1,4 +1,4 @@
-(defproject org.van-clj/json-zetta "0.0.1"
+(defproject org.van-clj/json-zetta "0.0.2-SNAPSHOT"
   :description "JSON zetta-parser combinator (port of Haskell's aeson)"
   :author "Roman Gonzalez"
   :dependencies [[org.clojure/clojure "1.3.0"]
