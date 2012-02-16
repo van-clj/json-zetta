@@ -6,6 +6,9 @@ The only benefit that this parser provides in comparision to clojure.data.json
 is the possibility of starting to parse a string without having all the
 input available (thanks to zetta-parser).
 
+## Install
+
+[org.van-clj/zetta-river "0.0.1"]
 
 ## Usage
 
