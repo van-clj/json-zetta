@@ -16,7 +16,7 @@
         [zetta.combinators
          :only (sep-by skip-many)]))
 
-(defrecord ContinueScan [buffer])
+(defrecord ContinueScan [scan-state])
 (defrecord ScanFinished [item-count remainder])
 
 (defn- continue-scan?
@@ -36,9 +36,9 @@
    on the previous call, with the current item being parsed."
   [state0 next-scan-step]
   (letfn [
-    (scanner [state0 item-count items0]
-      (let [item  (first items0)
-            items (rest items0)]
+    (scanner [state0 item-count buffer0]
+      (let [item  (first buffer0)
+            buffer (rest buffer0)]
       (if (nil? item)
         ; ^ when there is no elements in the buffer, we need
         ; to ask for more (this is done in process-scanner)
@@ -46,10 +46,10 @@
         (let [state1 (next-scan-step state0 item)]
           (if (nil? state1)
               ; ^ on nil, we stop the scan
-            (ScanFinished. item-count items)
-            (recur state1 (+ 1 item-count) items))))))
+            (ScanFinished. item-count buffer)
+            (recur state1 (+ 1 item-count) buffer))))))
 
-    (process-scanner [scan-acc state0]
+    (process-scanner [buffer state0]
       (do-parser
         [input get
          :let [scan-result (scanner state0 0 input)]
@@ -61,26 +61,27 @@
 
              :if more
              :then [
-               result (process-scanner (concat scan-acc input)
-                                       (:buffer scan-result))
+               result (process-scanner (concat buffer input)
+                                       (:scan-state scan-result))
              ]
              :else [
-               result (always (concat scan-acc input))
+               result (always (concat buffer input))
              ]]
 
            (scan-finished? scan-result) [
              _ (put (:remainder scan-result))
              result (always
-                      (concat scan-acc (take (:item-count scan-result) input)))]]]
-
-        result))
-  ]
+                      (concat buffer
+                              (take (:item-count scan-result) input)))]]]
+        result))]
   (do-parser
     [scans (process-scanner [] state0)
      :cond [
        (= (count scans) 1) [ result (always (first scans)) ]
        :else [ result (always (concat scans)) ]]]
     result)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (declare js-object_ js-array_ js-string_)
 
