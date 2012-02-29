@@ -8,7 +8,9 @@ input available (thanks to zetta-parser).
 
 ## Install
 
-[org.van-clj/zetta-river "0.0.1"]
+```
+[org.van-clj/zetta-river "0.0.2"]
+```
 
 ## Usage
 
