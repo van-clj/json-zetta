@@ -8,7 +8,7 @@ input available (thanks to zetta-parser).
 
 ## Install
 
-```
+```clojure
 [org.van-clj/zetta-river "0.0.2"]
 ```
 
