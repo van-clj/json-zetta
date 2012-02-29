@@ -16,8 +16,11 @@
         [zetta.combinators
          :only (sep-by skip-many)]))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrecord ContinueScan [scan-state])
-(defrecord ScanFinished [item-count remainder])
+(defrecord ScanFinished [^long item-count ^chars remainder])
 
 (defn- continue-scan?
   "Test when the scanning process will continue due to missing input."
@@ -36,7 +39,7 @@
    on the previous call, with the current item being parsed."
   [state0 next-scan-step]
   (letfn [
-    (scanner [state0 item-count buffer0]
+    (scanner [^chars state0 ^long item-count ^chars buffer0]
       (let [item  (first buffer0)
             buffer (rest buffer0)]
       (if (nil? item)
@@ -47,9 +50,9 @@
           (if (nil? state1)
               ; ^ on nil, we stop the scan
             (ScanFinished. item-count buffer)
-            (recur state1 (+ 1 item-count) buffer))))))
+            (recur state1 (inc item-count) buffer))))))
 
-    (process-scanner [buffer state0]
+    (process-scanner [^chars buffer state0]
       (do-parser
         [input get
          :let [scan-result (scanner state0 0 input)]
