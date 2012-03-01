@@ -78,11 +78,8 @@
                               (take (:item-count scan-result) input)))]]]
         result))]
   (do-parser
-    [scans (process-scanner [] state0)
-     :cond [
-       (= (count scans) 1) [ result (always (first scans)) ]
-       :else [ result (always (concat scans)) ]]]
-    result)))
+    [scans (process-scanner [] state0)]
+    (concat scans))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
