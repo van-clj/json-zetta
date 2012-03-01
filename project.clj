@@ -1,4 +1,4 @@
-(defproject org.van-clj/json-zetta "0.0.3-SNAPSHOT"
+(defproject org.van-clj/json-zetta "0.0.3"
   :description "JSON zetta-parser combinator (port of Haskell's aeson)"
   :author "Roman Gonzalez"
   :warn-on-reflection true
